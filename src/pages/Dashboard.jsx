@@ -72,13 +72,13 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       const [empRes, leaveRes, expenseRes, payrollRes, deptRes, annRes, attendRes] = await Promise.all([
-        fetch('http://localhost:5000/api/employees'),
-        fetch('http://localhost:5000/api/leaves'),
-        fetch('http://localhost:5000/api/expenses'),
-        fetch('http://localhost:5000/api/payroll'),
-        fetch('http://localhost:5000/api/departments'),
-        fetch('http://localhost:5000/api/announcements'),
-        fetch('http://localhost:5000/api/attendance').catch(() => ({ json: () => [] }))
+        fetch('/api/employees'),
+        fetch('/api/leaves'),
+        fetch('/api/expenses'),
+        fetch('/api/payroll'),
+        fetch('/api/departments'),
+        fetch('/api/announcements'),
+        fetch('/api/attendance').catch(() => ({ json: () => [] }))
       ]);
 
       setEmployees(await empRes.json());
@@ -120,7 +120,7 @@ export default function Dashboard() {
 }
 Data: Employees:${employees.length}, Active:${activeCount}, Pending Leaves:${pendingLeaves}, Pending Expenses:${pendingExpenses}, Payroll:$${totalPayroll}.`;
 
-      const response = await fetch('http://localhost:5000/api/chatbot/ask', {
+      const response = await fetch('/api/chatbot/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: prompt })

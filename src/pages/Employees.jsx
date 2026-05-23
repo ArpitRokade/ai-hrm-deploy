@@ -21,7 +21,7 @@ export default function Employees() {
   const [deptFilter, setDeptFilter] = useState('All');
   const [showModal, setShowModal] = useState(false);
   const [selected, setSelected] = useState(null);
-  const [editing, setEditing] = useState(null); // employee being edited
+  const [editing, setEditing] = useState(null);
   const [newEmp, setNewEmp] = useState({
     name: '', role: '', dept: 'Engineering', salary: '', email: '', phone: ''
   });
@@ -34,7 +34,6 @@ export default function Employees() {
     (e.name?.toLowerCase().includes(search.toLowerCase()) || e.role?.toLowerCase().includes(search.toLowerCase()))
   );
 
-  // Fetch employees from backend
   useEffect(() => {
     fetchEmployees();
   }, []);
@@ -43,19 +42,18 @@ export default function Employees() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('http://localhost:5000/api/employees');
+      const res = await fetch('/api/employees');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setEmployees(data);
     } catch (err) {
       console.error('Fetch error:', err);
-      setError('Could not load employees. Make sure backend is running on port 5000.');
+      setError('Could not load employees. Make sure backend is running.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Add employee
   const handleAdd = async () => {
     if (!newEmp.name || !newEmp.role || !newEmp.salary) return;
     const emp = {
@@ -69,7 +67,7 @@ export default function Employees() {
       phone: newEmp.phone || '+65 9XXX XXXX'
     };
     try {
-      const res = await fetch('http://localhost:5000/api/employees', {
+      const res = await fetch('/api/employees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emp)
@@ -89,11 +87,10 @@ export default function Employees() {
     }
   };
 
-  // Edit employee
   const handleUpdate = async () => {
     if (!editing) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/employees/${editing.id}`, {
+      const res = await fetch(`/api/employees/${editing.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editing)
@@ -112,11 +109,10 @@ export default function Employees() {
     }
   };
 
-  // Delete employee
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this employee?')) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/employees/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setEmployees(prev => prev.filter(emp => emp.id !== id));
         setSelected(null);
@@ -129,7 +125,6 @@ export default function Employees() {
     }
   };
 
-  // AI suggestion for role/department based on name (optional)
   const getAiSuggestion = async () => {
     if (!newEmp.name.trim()) {
       alert('Please enter a name first');
@@ -137,7 +132,7 @@ export default function Employees() {
     }
     setAiSuggesting(true);
     try {
-      const res = await fetch('http://localhost:5000/api/chatbot/ask', {
+      const res = await fetch('/api/chatbot/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -190,7 +185,6 @@ export default function Employees() {
         <p>Manage your workforce across all departments.</p>
       </div>
 
-      {/* Filters & Actions */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div className="topbar-search" style={{ width: 260 }}>
           <Search size={14} color="var(--text-3)" />
@@ -208,7 +202,6 @@ export default function Employees() {
         </button>
       </div>
 
-      {/* Employee Table */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="table-wrap">
           <table>
@@ -256,7 +249,6 @@ export default function Employees() {
         </div>
       </div>
 
-      {/* View Modal */}
       {selected && !editing && (
         <div className="modal-overlay" onClick={() => setSelected(null)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
@@ -286,7 +278,6 @@ export default function Employees() {
         </div>
       )}
 
-      {/* Edit Modal */}
       {editing && (
         <div className="modal-overlay" onClick={() => setEditing(null)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
@@ -317,7 +308,6 @@ export default function Employees() {
         </div>
       )}
 
-      {/* Add Modal with AI suggestion */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>

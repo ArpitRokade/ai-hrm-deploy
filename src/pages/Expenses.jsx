@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Check, X, Receipt, Sparkles, TrendingUp, 
   DollarSign, PieChart as PieChartIcon, Loader2,
-  RefreshCw, AlertCircle, FileText, BarChart3, Award, Clock
+  RefreshCw, AlertCircle, FileText, BarChart3
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -19,16 +19,6 @@ const catColors = {
   Other: '#94a3b8' 
 };
 
-// Format Indian Rupee
-const formatINR = (amount) => {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(amount);
-};
-
 // Custom tooltip for amount bar chart
 const CustomAmountTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -43,7 +33,7 @@ const CustomAmountTooltip = ({ active, payload, label }) => {
         <p style={{ color: 'var(--text-2)', fontSize: 12, marginBottom: 6 }}>{label}</p>
         {payload.map((entry, idx) => (
           <p key={idx} style={{ color: entry.color, fontSize: 14, fontWeight: 500 }}>
-            {entry.name}: {formatINR(entry.value)}
+            {entry.name}: ${entry.value?.toFixed(2)}
           </p>
         ))}
       </div>
@@ -63,7 +53,7 @@ const PieTooltip = ({ active, payload }) => {
         padding: '8px 14px',
       }}>
         <p style={{ color: 'var(--text-1)', fontSize: 13, marginBottom: 4 }}>{payload[0].name}</p>
-        <p style={{ color: '#fbbf24', fontSize: 16, fontWeight: 700 }}>{formatINR(payload[0].value)}</p>
+        <p style={{ color: '#fbbf24', fontSize: 16, fontWeight: 700 }}>${payload[0].value?.toFixed(2)}</p>
       </div>
     );
   }
@@ -90,8 +80,8 @@ export default function Expenses() {
     setLoading(true);
     try {
       const [expRes, empRes] = await Promise.all([
-        fetch('http://localhost:5000/api/expenses'),
-        fetch('http://localhost:5000/api/employees')
+        fetch('/api/expenses'),
+        fetch('/api/employees')
       ]);
       const expenseData = await expRes.json();
       const employeeData = await empRes.json();
@@ -117,7 +107,7 @@ export default function Expenses() {
   const approve = async (id) => {
     const updated = claims.map(c => c.id === id ? { ...c, status: 'Approved' } : c);
     setClaims(updated);
-    await fetch(`http://localhost:5000/api/expenses/${id}`, {
+    await fetch(`/api/expenses/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'Approved' })
@@ -127,7 +117,7 @@ export default function Expenses() {
   const reject = async (id) => {
     const updated = claims.map(c => c.id === id ? { ...c, status: 'Rejected' } : c);
     setClaims(updated);
-    await fetch(`http://localhost:5000/api/expenses/${id}`, {
+    await fetch(`/api/expenses/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'Rejected' })
@@ -148,7 +138,7 @@ export default function Expenses() {
       desc: form.desc
     };
     try {
-      const res = await fetch('http://localhost:5000/api/expenses', {
+      const res = await fetch('/api/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -176,14 +166,14 @@ export default function Expenses() {
 
       const prompt = `You are a finance HR analyst. Based on expense data:
 - Total claims: ${claims.length}
-- Approved amount: ${totalApproved}
-- Pending amount: ${totalPending}
-- Top expense category: ${topCategory ? `${topCategory[0]} (${topCategory[1]})` : 'N/A'}
+- Approved amount: $${totalApproved.toFixed(2)}
+- Pending amount: $${totalPending.toFixed(2)}
+- Top expense category: ${topCategory ? `${topCategory[0]} ($${topCategory[1].toFixed(2)})` : 'N/A'}
 
 Return JSON: {"summary":"one sentence overall health","alert":"any anomaly","recommendation":"actionable step","savingsTip":"cost saving idea"}
 Only JSON.`;
 
-      const response = await fetch('http://localhost:5000/api/chatbot/ask', {
+      const response = await fetch('/api/chatbot/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: prompt })
@@ -214,18 +204,7 @@ Only JSON.`;
     amount: claims.filter(c => c.category === cat).reduce((s, c) => s + (c.amount || 0), 0)
   })).filter(d => d.amount > 0);
 
-  // Calculate spending by employee
-  const employeeSpending = {};
-  claims.forEach(c => {
-    const empName = employees.find(e => e.id === c.empId)?.name || `Employee #${c.empId}`;
-    employeeSpending[empName] = (employeeSpending[empName] || 0) + (c.amount || 0);
-  });
-  const employeeData = Object.entries(employeeSpending)
-    .map(([name, amount]) => ({ name, amount }))
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 5);
-
-  // Monthly trend
+  // IMPROVED: Monthly trend data for bar chart (grouped by month, approved vs pending amounts)
   const monthlyTrendMap = {};
   claims.forEach(c => {
     const month = c.date?.slice(0, 7) || 'Unknown';
@@ -240,15 +219,8 @@ Only JSON.`;
     trendData = [{ month: 'No data', approved: 0, pending: 0 }];
   }
 
-  // Get top spending employee
-  const topSpender = employeeData[0];
-
-  // Get recent claims (last 3)
-  const recentClaims = [...enrichedClaims].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
-
   const totalApproved = claims.filter(c => c.status === 'Approved').reduce((s, c) => s + (c.amount || 0), 0);
   const totalPending = claims.filter(c => c.status === 'Pending').reduce((s, c) => s + (c.amount || 0), 0);
-  const monthlyBudget = 50000; // Monthly budget in INR (example threshold)
 
   if (loading) {
     return (
@@ -275,12 +247,12 @@ Only JSON.`;
         </div>
         <div className="stat-card green">
           <div className="stat-label">Approved Amount</div>
-          <div className="stat-value green">{formatINR(totalApproved)}</div>
+          <div className="stat-value green">${totalApproved.toFixed(2)}</div>
           <div className="stat-sub">Reimbursed</div>
         </div>
         <div className="stat-card orange">
           <div className="stat-label">Pending Amount</div>
-          <div className="stat-value orange">{formatINR(totalPending)}</div>
+          <div className="stat-value orange">${totalPending.toFixed(2)}</div>
           <div className="stat-sub">Awaiting approval</div>
         </div>
         <div className="stat-card purple">
@@ -289,25 +261,6 @@ Only JSON.`;
           <div className="stat-sub">Claims</div>
         </div>
       </div>
-
-      {/* Budget Alert Card */}
-      {totalPending > monthlyBudget && (
-        <div style={{ 
-          background: 'rgba(248,113,113,0.1)', 
-          border: '1px solid rgba(248,113,113,0.2)', 
-          borderRadius: 12, 
-          padding: '12px 16px', 
-          marginBottom: 20,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10
-        }}>
-          <AlertCircle size={20} style={{ color: '#f87171' }} />
-          <span style={{ fontSize: 13, color: '#f87171' }}>
-            ⚠️ Pending claims ({formatINR(totalPending)}) exceed monthly budget ({formatINR(monthlyBudget)}). Please review pending approvals.
-          </span>
-        </div>
-      )}
 
       {/* AI Insight Card */}
       <div className="card" style={{ marginBottom: 24, padding: '20px' }}>
@@ -335,22 +288,22 @@ Only JSON.`;
         )}
       </div>
 
-      {/* Charts Row */}
-      <div className="card-grid-3" style={{ marginBottom: 24, gap: 20 }}>
+      {/* Charts Row - Fixed Monthly Trend */}
+      <div className="card-grid-2" style={{ marginBottom: 24, gap: 20 }}>
         {/* Donut Chart - Spending by Category */}
         <div className="card" style={{ padding: '20px' }}>
           <div className="card-header" style={{ marginBottom: 12 }}>
             <div className="card-title">Spending by Category</div>
             <PieChartIcon size={16} style={{ color: 'var(--text-3)' }} />
           </div>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
                 data={categoryData}
                 cx="50%"
                 cy="50%"
-                innerRadius={50}
-                outerRadius={75}
+                innerRadius={55}
+                outerRadius={85}
                 paddingAngle={2}
                 dataKey="amount"
                 label={({ name, percent }) => `${name} (${(percent*100).toFixed(0)}%)`}
@@ -365,70 +318,55 @@ Only JSON.`;
           </ResponsiveContainer>
         </div>
 
-        {/* Monthly Trend - Grouped Bar Chart */}
+        {/* Improved Monthly Trend - Grouped Bar Chart (Amounts) */}
         <div className="card" style={{ padding: '20px' }}>
           <div className="card-header" style={{ marginBottom: 12 }}>
             <div className="card-title">Monthly Expense Trend</div>
             <BarChart3 size={16} style={{ color: 'var(--text-3)' }} />
           </div>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={260}>
             <BarChart data={trendData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} dy={8} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={(val) => `₹${val/1000}k`} />
+              <XAxis 
+                dataKey="month" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#94a3b8', fontSize: 11 }} 
+                dy={8}
+              />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#94a3b8', fontSize: 11 }} 
+                tickFormatter={(val) => `$${val}`}
+              />
               <Tooltip content={<CustomAmountTooltip />} cursor={{ fill: 'rgba(56,189,248,0.05)' }} />
-              <Bar dataKey="pending" name="Pending" fill="#fbbf24" radius={[4, 4, 0, 0]} barSize={28} />
-              <Bar dataKey="approved" name="Approved" fill="#34d399" radius={[4, 4, 0, 0]} barSize={28} />
+              <Bar 
+                dataKey="pending" 
+                name="Pending" 
+                fill="#fbbf24" 
+                radius={[4, 4, 0, 0]} 
+                barSize={32}
+              />
+              <Bar 
+                dataKey="approved" 
+                name="Approved" 
+                fill="#34d399" 
+                radius={[4, 4, 0, 0]} 
+                barSize={32}
+              />
             </BarChart>
           </ResponsiveContainer>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 10, height: 10, borderRadius: 2, background: '#fbbf24' }}></div>
-              <span style={{ fontSize: 10, color: 'var(--text-2)' }}>Pending</span>
+              <div style={{ width: 12, height: 12, borderRadius: 2, background: '#fbbf24' }}></div>
+              <span style={{ fontSize: 11, color: 'var(--text-2)' }}>Pending Amount</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 10, height: 10, borderRadius: 2, background: '#34d399' }}></div>
-              <span style={{ fontSize: 10, color: 'var(--text-2)' }}>Approved</span>
+              <div style={{ width: 12, height: 12, borderRadius: 2, background: '#34d399' }}></div>
+              <span style={{ fontSize: 11, color: 'var(--text-2)' }}>Approved Amount</span>
             </div>
           </div>
-        </div>
-
-        {/* Employee Spending Chart */}
-        <div className="card" style={{ padding: '20px' }}>
-          <div className="card-header" style={{ marginBottom: 12 }}>
-            <div className="card-title">Top Spending Employees</div>
-            <Award size={16} style={{ color: 'var(--text-3)' }} />
-          </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={employeeData} layout="vertical" margin={{ left: 60, right: 10 }}>
-              <XAxis type="number" tickFormatter={(val) => `₹${val/1000}k`} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
-              <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#cbd5e1', fontSize: 11 }} width={60} />
-              <Tooltip formatter={(value) => formatINR(value)} />
-              <Bar dataKey="amount" fill="#818cf8" radius={[0, 4, 4, 0]} barSize={20} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Recent Claims Quick View */}
-      <div className="card" style={{ marginBottom: 16, padding: '16px 20px' }}>
-        <div className="card-header" style={{ marginBottom: 12 }}>
-          <div className="card-title"><Clock size={16} style={{ marginRight: 8 }} />Recent Claims</div>
-        </div>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          {recentClaims.map(claim => (
-            <div key={claim.id} style={{ 
-              background: 'var(--bg-deep)', 
-              borderRadius: 10, 
-              padding: '10px 14px', 
-              flex: '1 1 200px',
-              borderLeft: `3px solid ${catColors[claim.category]}`
-            }}>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>{claim.empName}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{claim.category} • {claim.date}</div>
-              <div style={{ fontWeight: 700, color: catColors[claim.category] }}>{formatINR(claim.amount)}</div>
-            </div>
-          ))}
         </div>
       </div>
 
@@ -470,7 +408,7 @@ Only JSON.`;
                       {c.category}
                     </span>
                   </td>
-                  <td style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>{formatINR(c.amount)}</td>
+                  <td style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>${c.amount?.toFixed(2)}</td>
                   <td style={{ color: 'var(--text-2)', fontSize: 13 }}>{c.date}</td>
                   <td style={{ color: 'var(--text-2)', fontSize: 12, maxWidth: 180 }}>{c.desc}</td>
                   <td>
@@ -509,7 +447,7 @@ Only JSON.`;
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
             <div className="modal-title">New Expense Claim</div>
-            <div className="modal-sub">Submit a claim for reimbursement (₹ Indian Rupee).</div>
+            <div className="modal-sub">Submit a claim for reimbursement.</div>
             <div className="form-grid">
               <div className="form-group" style={{ gridColumn: '1/-1' }}>
                 <label className="form-label">Employee</label>
@@ -525,8 +463,8 @@ Only JSON.`;
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">Amount (₹)</label>
-                <input className="form-input" type="number" step="0.01" placeholder="e.g. 4500" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
+                <label className="form-label">Amount (SGD)</label>
+                <input className="form-input" type="number" step="0.01" placeholder="e.g. 45.60" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">Date</label>

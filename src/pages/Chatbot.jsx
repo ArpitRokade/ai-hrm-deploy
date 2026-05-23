@@ -21,7 +21,6 @@ export default function Chatbot() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
 
-  // Returned to your exact original UI formatting logic
   const formatMsg = text =>
     text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>');
 
@@ -31,13 +30,11 @@ export default function Chatbot() {
     setInput('');
     const newMessages = [...messages, { role: 'user', content: userText }];
     setMessages(newMessages);
-    
-    // FIXED: Changed from loading(true) to the correct state setter function
     setLoading(true);
 
     try {
-      // Call your Gemini-powered backend
-      const response = await fetch('http://localhost:5000/api/chatbot/ask', {
+      // Call your Gemini-powered backend (relative URL)
+      const response = await fetch('/api/chatbot/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: userText })
@@ -53,7 +50,7 @@ export default function Chatbot() {
       setMessages(prev => [...prev, { role: 'ai', content: reply }]);
     } catch (err) {
       console.error('Chat error:', err);
-      setMessages(prev => [...prev, { role: 'ai', content: "⚠️ I'm having trouble connecting. Make sure your backend server is running on port 5000." }]);
+      setMessages(prev => [...prev, { role: 'ai', content: "⚠️ I'm having trouble connecting. Please try again later." }]);
     } finally {
       setLoading(false);
     }

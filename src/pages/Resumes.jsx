@@ -20,15 +20,13 @@ Python, PyTorch, TensorFlow, distributed training, MLOps, curriculum design.
 Education:
 PhD Stanford 2017, BSc MIT 2011.`);
 
-  // Load existing candidates from backend
   useEffect(() => {
-    fetch('http://localhost:5000/api/resumes')
+    fetch('/api/resumes')
       .then(res => res.json())
       .then(data => setCandidates(data))
       .catch(() => setCandidates([]));
   }, []);
 
-  // Resume screening using the analyzer endpoint (local keyword-based)
   const screenResume = async () => {
     if (!resumeText.trim()) {
       alert('Please paste a resume text.');
@@ -43,7 +41,7 @@ PhD Stanford 2017, BSc MIT 2011.`);
     setScreeningResult(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/analyzer/analyze', {
+      const response = await fetch('/api/analyzer/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -54,7 +52,6 @@ PhD Stanford 2017, BSc MIT 2011.`);
       
       const data = await response.json();
       
-      // The backend returns: { keyStrengths, gaps, score, recommendation }
       setScreeningResult({
         strengths: data.keyStrengths || [],
         gaps: data.gaps || [],
@@ -78,7 +75,6 @@ PhD Stanford 2017, BSc MIT 2011.`);
     }
   };
 
-  // Add screened candidate to list (POST to backend)
   const addToCandidates = async () => {
     if (!screeningResult) return;
 
@@ -94,7 +90,7 @@ PhD Stanford 2017, BSc MIT 2011.`);
     };
 
     try {
-      const res = await fetch('http://localhost:5000/api/resumes', {
+      const res = await fetch('/api/resumes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newCandidate)
@@ -112,7 +108,6 @@ PhD Stanford 2017, BSc MIT 2011.`);
     }
   };
 
-  // Get recommendation badge color
   const getRecoColor = (rec) => {
     if (rec === 'Strong Hire') return '#34d399';
     if (rec === 'Interview') return '#38bdf8';
@@ -128,62 +123,31 @@ PhD Stanford 2017, BSc MIT 2011.`);
       </div>
 
       <div className="card-grid-2" style={{ marginBottom: 20 }}>
-        {/* Left: Screening form */}
         <div className="card">
           <div className="card-header">
             <div className="card-title"><FileSearch size={16} style={{ marginRight: 8 }} />Screen New Resume</div>
           </div>
           <div className="form-group" style={{ marginBottom: 16 }}>
             <label className="form-label">Job Role *</label>
-            <input
-              className="form-input"
-              value={role}
-              onChange={e => setRole(e.target.value)}
-              placeholder="e.g. Senior Data Scientist, Frontend Engineer"
-            />
+            <input className="form-input" value={role} onChange={e => setRole(e.target.value)} placeholder="e.g. Senior Data Scientist, Frontend Engineer" />
           </div>
           <div className="form-group" style={{ marginBottom: 16 }}>
             <label className="form-label">Resume Text *</label>
-            <textarea
-              className="form-input"
-              rows="8"
-              value={resumeText}
-              onChange={e => setResumeText(e.target.value)}
-              placeholder="Paste the candidate's resume here..."
-              style={{ fontFamily: 'monospace', fontSize: 13 }}
-            />
+            <textarea className="form-input" rows="8" value={resumeText} onChange={e => setResumeText(e.target.value)} placeholder="Paste the candidate's resume here..." style={{ fontFamily: 'monospace', fontSize: 13 }} />
           </div>
-          <button
-            className="btn btn-primary"
-            onClick={screenResume}
-            disabled={loading}
-            style={{ width: '100%', justifyContent: 'center' }}
-          >
+          <button className="btn btn-primary" onClick={screenResume} disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
             {loading ? <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Sparkles size={16} />}
             {loading ? ' Screening...' : ' Screen Resume with AI'}
           </button>
         </div>
 
-        {/* Right: Screening Result */}
         <div className="card">
-          <div className="card-header">
-            <div className="card-title">AI Fit Analysis</div>
-          </div>
+          <div className="card-header"><div className="card-title">AI Fit Analysis</div></div>
           {screeningResult ? (
             <div>
-              {/* Score gauge */}
               <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                <div style={{
-                  width: 120, height: 120, borderRadius: '50%',
-                  background: `conic-gradient(${getRecoColor(screeningResult.recommendation)} ${screeningResult.score * 3.6}deg, var(--bg-deep) 0deg)`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto'
-                }}>
-                  <div style={{
-                    width: 100, height: 100, borderRadius: '50%',
-                    background: 'var(--bg-card)', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center', flexDirection: 'column'
-                  }}>
+                <div style={{ width: 120, height: 120, borderRadius: '50%', background: `conic-gradient(${getRecoColor(screeningResult.recommendation)} ${screeningResult.score * 3.6}deg, var(--bg-deep) 0deg)`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                  <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
                     <span style={{ fontSize: 32, fontWeight: 700 }}>{screeningResult.score}</span>
                     <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Fit Score</span>
                   </div>
@@ -193,7 +157,6 @@ PhD Stanford 2017, BSc MIT 2011.`);
                 </div>
               </div>
 
-              {/* Strengths */}
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <CheckCircle size={14} /> Key Strengths
@@ -203,7 +166,6 @@ PhD Stanford 2017, BSc MIT 2011.`);
                 </ul>
               </div>
 
-              {/* Gaps */}
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--danger)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <AlertCircle size={14} /> Gaps / Missing
@@ -213,11 +175,7 @@ PhD Stanford 2017, BSc MIT 2011.`);
                 </ul>
               </div>
 
-              <button
-                className="btn btn-outline"
-                onClick={addToCandidates}
-                style={{ width: '100%', marginTop: 8, gap: 8 }}
-              >
+              <button className="btn btn-outline" onClick={addToCandidates} style={{ width: '100%', marginTop: 8, gap: 8 }}>
                 <UserPlus size={14} /> Add to Candidate List
               </button>
             </div>
@@ -230,7 +188,6 @@ PhD Stanford 2017, BSc MIT 2011.`);
         </div>
       </div>
 
-      {/* Existing Candidates List */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="card-header" style={{ padding: '16px 20px', marginBottom: 0, borderBottom: '1px solid var(--border)' }}>
           <div className="card-title">Previously Screened Candidates</div>
@@ -255,21 +212,12 @@ PhD Stanford 2017, BSc MIT 2011.`);
                 </tr>
               ))}
               {candidates.length === 0 && (
-                <tr><td colSpan="6" style={{ textAlign: 'center', padding: 32, color: 'var(--text-3)' }}>No candidates screened yet. Use the form above.</td></tr>
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: 32, color: 'var(--text-3)' }}>No candidates screened yet.</td>
+                </tr>
               )}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      {/* Info card */}
-      <div className="card" style={{ marginTop: 20, padding: '20px' }}>
-        <div className="card-header">
-          <div className="card-title"><Sparkles size={16} style={{ marginRight: 8 }} /> How it works</div>
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          The analyzer uses intelligent keyword matching to evaluate the resume against the job role. 
-          It provides a score, strengths, gaps, and a recommendation. You can then add the candidate to your screening list.
         </div>
       </div>
     </div>

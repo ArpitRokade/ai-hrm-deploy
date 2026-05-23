@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, CartesianGrid
+  PieChart, Pie, Cell, CartesianGrid
 } from 'recharts';
 
 const leaveTypes = ['Annual', 'Medical', 'Childcare', 'Maternity', 'Paternity', 'Unpaid'];
@@ -22,7 +22,6 @@ const typeColors = {
 const DEFAULT_ANNUAL_ENTITLEMENT = 14;
 const DEFAULT_MEDICAL_ENTITLEMENT = 14;
 
-// Custom tooltip for bar chart
 const CustomBarTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
@@ -67,8 +66,8 @@ export default function Leaves() {
     setLoading(true);
     try {
       const [leaveRes, empRes] = await Promise.all([
-        fetch('http://localhost:5000/api/leaves'),
-        fetch('http://localhost:5000/api/employees')
+        fetch('/api/leaves'),
+        fetch('/api/employees')
       ]);
       const leaveData = await leaveRes.json();
       const empData = await empRes.json();
@@ -110,7 +109,7 @@ export default function Leaves() {
   const approve = async (id) => {
     const updated = leaves.map(l => l.id === id ? { ...l, status: 'Approved' } : l);
     setLeaves(updated);
-    await fetch(`http://localhost:5000/api/leaves/${id}`, {
+    await fetch(`/api/leaves/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'Approved' })
@@ -120,7 +119,7 @@ export default function Leaves() {
   const reject = async (id) => {
     const updated = leaves.map(l => l.id === id ? { ...l, status: 'Rejected' } : l);
     setLeaves(updated);
-    await fetch(`http://localhost:5000/api/leaves/${id}`, {
+    await fetch(`/api/leaves/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'Rejected' })
@@ -148,7 +147,7 @@ export default function Leaves() {
       reason: form.reason
     };
     try {
-      const res = await fetch('http://localhost:5000/api/leaves', {
+      const res = await fetch('/api/leaves', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -184,7 +183,7 @@ export default function Leaves() {
 Return JSON: {"summary":"one sentence overall health","alert":"if any anomaly","recommendation":"actionable step","policyTip":"policy suggestion"}
 Only JSON.`;
 
-      const response = await fetch('http://localhost:5000/api/chatbot/ask', {
+      const response = await fetch('/api/chatbot/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: prompt })
@@ -209,13 +208,11 @@ Only JSON.`;
     }
   };
 
-  // Prepare chart data: leave by type (donut)
   const leaveByType = leaveTypes.map(type => ({
     name: type,
     count: leaves.filter(l => l.type === type).length
   })).filter(d => d.count > 0);
 
-  // IMPROVED: Monthly trend data for bar chart (grouped by month, pending vs approved counts)
   const monthlyTrendMap = {};
   leaves.forEach(l => {
     const month = l.from?.slice(0, 7) || 'Unknown';
@@ -226,7 +223,6 @@ Only JSON.`;
     else if (l.status === 'Approved') monthlyTrendMap[month].approved += 1;
   });
   let trendData = Object.values(monthlyTrendMap).sort((a, b) => a.month.localeCompare(b.month));
-  // If no data, show a placeholder
   if (trendData.length === 0) {
     trendData = [{ month: 'No data', pending: 0, approved: 0 }];
   }
@@ -249,7 +245,6 @@ Only JSON.`;
         <p>Track, approve, and analyze employee leave requests with AI insights.</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
         <div className="stat-card blue">
           <div className="stat-label">Total Requests</div>
@@ -273,7 +268,6 @@ Only JSON.`;
         </div>
       </div>
 
-      {/* AI Insight Card */}
       <div className="card" style={{ marginBottom: 24, padding: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -299,9 +293,7 @@ Only JSON.`;
         )}
       </div>
 
-      {/* Charts Row - Fixed Monthly Trend */}
       <div className="card-grid-2" style={{ marginBottom: 24, gap: 20 }}>
-        {/* Donut Chart - Leave by Type */}
         <div className="card" style={{ padding: '20px' }}>
           <div className="card-header" style={{ marginBottom: 12 }}>
             <div className="card-title">Leave by Type</div>
@@ -329,7 +321,6 @@ Only JSON.`;
           </ResponsiveContainer>
         </div>
 
-        {/* Improved Monthly Trend - Grouped Bar Chart */}
         <div className="card" style={{ padding: '20px' }}>
           <div className="card-header" style={{ marginBottom: 12 }}>
             <div className="card-title">Monthly Leave Trend</div>
@@ -338,34 +329,11 @@ Only JSON.`;
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={trendData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis 
-                dataKey="month" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#94a3b8', fontSize: 11 }} 
-                dy={8}
-              />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#94a3b8', fontSize: 11 }} 
-                allowDecimals={false}
-              />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} dy={8} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} allowDecimals={false} />
               <Tooltip content={<CustomBarTooltip />} cursor={{ fill: 'rgba(56,189,248,0.05)' }} />
-              <Bar 
-                dataKey="pending" 
-                name="Pending" 
-                fill="#fbbf24" 
-                radius={[4, 4, 0, 0]} 
-                barSize={32}
-              />
-              <Bar 
-                dataKey="approved" 
-                name="Approved" 
-                fill="#34d399" 
-                radius={[4, 4, 0, 0]} 
-                barSize={32}
-              />
+              <Bar dataKey="pending" name="Pending" fill="#fbbf24" radius={[4, 4, 0, 0]} barSize={32} />
+              <Bar dataKey="approved" name="Approved" fill="#34d399" radius={[4, 4, 0, 0]} barSize={32} />
             </BarChart>
           </ResponsiveContainer>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 12 }}>
@@ -381,7 +349,6 @@ Only JSON.`;
         </div>
       </div>
 
-      {/* Tabs and Add Button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div className="tabs">
           {tabs.map(t => (
@@ -393,7 +360,6 @@ Only JSON.`;
         <button className="btn btn-primary" onClick={() => setShowModal(true)}><Plus size={14} /> Apply Leave</button>
       </div>
 
-      {/* Leave Requests Table */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="table-wrap">
           <table>
@@ -435,7 +401,6 @@ Only JSON.`;
         </div>
       </div>
 
-      {/* Add Leave Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>

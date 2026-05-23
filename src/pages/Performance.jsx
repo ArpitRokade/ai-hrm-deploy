@@ -62,8 +62,8 @@ export default function Performance() {
     setLoading(true);
     try {
       const [perfRes, empRes] = await Promise.all([
-        fetch('http://localhost:5000/api/performance'),
-        fetch('http://localhost:5000/api/employees')
+        fetch('/api/performance'),
+        fetch('/api/employees')
       ]);
       const perfData = await perfRes.json();
       const empData = await empRes.json();
@@ -71,12 +71,12 @@ export default function Performance() {
       setEmployees(empData);
     } catch (err) {
       console.error('Fetch error:', err);
-      // Fallback mock
+      // Fallback mock data for demonstration
       setReviews([
-        { id: 1, name: 'Alice Tan', rating: 4.7, review: 'Excellent problem solver.', trend: '+0.3', quarter: 'Q1' },
-        { id: 2, name: 'Bob Lee', rating: 3.9, review: 'Solid but needs communication.', trend: '-0.1', quarter: 'Q2' },
-        { id: 3, name: 'Carol Lim', rating: 4.9, review: 'Outstanding leadership.', trend: '+0.5', quarter: 'Q3' },
-        { id: 4, name: 'David Koh', rating: 3.5, review: 'Meets expectations.', trend: '-0.2', quarter: 'Q4' }
+        { id: 1, name: 'Alice Tan', rating: 4.7, review: 'Excellent problem solver, great team player.', trend: '+0.3', quarter: 'Q2' },
+        { id: 2, name: 'Bob Lee', rating: 3.9, review: 'Solid performance but needs improvement in communication.', trend: '-0.1', quarter: 'Q2' },
+        { id: 3, name: 'Carol Lim', rating: 4.9, review: 'Outstanding leadership and technical contributions.', trend: '+0.5', quarter: 'Q2' },
+        { id: 4, name: 'David Koh', rating: 3.5, review: 'Meets expectations; set clear growth goals.', trend: '-0.2', quarter: 'Q2' }
       ]);
       setEmployees([
         { id: 1, name: 'Alice Tan', dept: 'Engineering' },
@@ -110,11 +110,16 @@ export default function Performance() {
 - Low performers (<3.8): ${lowPerformers}
 - Department average ratings: ${JSON.stringify(deptPerformance)}
 
-Provide JSON: 
-{"summary":"one sentence overall health","topDepartment":"dept with highest avg","improvementFocus":"specific skill","recommendation":"actionable step"}
+Provide a concise JSON response: 
+{
+  "summary": "One-sentence overall performance health",
+  "topDepartment": "Department with highest avg rating",
+  "improvementFocus": "Specific skill or area to focus coaching",
+  "recommendation": "Actionable HR recommendation"
+}
 Only output valid JSON.`;
 
-      const response = await fetch('http://localhost:5000/api/chatbot/ask', {
+      const response = await fetch('/api/chatbot/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: prompt })
@@ -126,13 +131,14 @@ Only output valid JSON.`;
         parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
       } catch (e) { parsed = null; }
       setAiInsight(parsed || {
-        summary: "Performance stable, focus on collaboration.",
+        summary: "Overall performance is stable, with a few high performers.",
         topDepartment: "Engineering",
-        improvementFocus: "Cross-functional communication",
+        improvementFocus: "Cross-functional collaboration",
         recommendation: "Implement quarterly 360 reviews"
       });
     } catch (err) {
       console.error(err);
+      setAiInsight({ summary: "AI analysis unavailable", topDepartment: "N/A", improvementFocus: "N/A", recommendation: "Check backend" });
     } finally {
       setAiLoading(false);
     }
@@ -141,16 +147,16 @@ Only output valid JSON.`;
   const generateCoachingTip = async (employeeName, rating, reviewText) => {
     setCoachingTip('Generating...');
     try {
-      const prompt = `Employee: ${employeeName}, Rating: ${rating}/5, Review: "${reviewText}". Provide one actionable coaching tip (max 20 words). Return only the tip.`;
-      const response = await fetch('http://localhost:5000/api/chatbot/ask', {
+      const prompt = `Employee: ${employeeName}, Rating: ${rating}/5, Review: "${reviewText}". Provide one actionable coaching tip (max 20 words) to help them improve. Return only the tip, no extra text.`;
+      const response = await fetch('/api/chatbot/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: prompt })
       });
       const data = await response.json();
-      setCoachingTip(data.reply || 'Focus on goal setting and feedback.');
+      setCoachingTip(data.reply || 'Focus on communication and goal setting.');
     } catch (err) {
-      setCoachingTip('Unable to generate tip.');
+      setCoachingTip('Unable to generate tip. Please try again.');
     }
   };
 
