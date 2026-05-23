@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, CartesianGrid
+  PieChart, Pie, Cell, CartesianGrid
 } from 'recharts';
 
 const categories = ['Transport', 'Meals', 'Equipment', 'Training', 'Entertainment', 'Other'];
@@ -19,7 +19,16 @@ const catColors = {
   Other: '#94a3b8' 
 };
 
-// Custom tooltip for amount bar chart
+// Format Indian Rupee
+const formatINR = (amount) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(amount);
+};
+
 const CustomAmountTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
@@ -33,7 +42,7 @@ const CustomAmountTooltip = ({ active, payload, label }) => {
         <p style={{ color: 'var(--text-2)', fontSize: 12, marginBottom: 6 }}>{label}</p>
         {payload.map((entry, idx) => (
           <p key={idx} style={{ color: entry.color, fontSize: 14, fontWeight: 500 }}>
-            {entry.name}: ${entry.value?.toFixed(2)}
+            {entry.name}: {formatINR(entry.value)}
           </p>
         ))}
       </div>
@@ -42,7 +51,6 @@ const CustomAmountTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-// Custom tooltip for pie chart
 const PieTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
@@ -53,7 +61,7 @@ const PieTooltip = ({ active, payload }) => {
         padding: '8px 14px',
       }}>
         <p style={{ color: 'var(--text-1)', fontSize: 13, marginBottom: 4 }}>{payload[0].name}</p>
-        <p style={{ color: '#fbbf24', fontSize: 16, fontWeight: 700 }}>${payload[0].value?.toFixed(2)}</p>
+        <p style={{ color: '#fbbf24', fontSize: 16, fontWeight: 700 }}>{formatINR(payload[0].value)}</p>
       </div>
     );
   }
@@ -166,9 +174,9 @@ export default function Expenses() {
 
       const prompt = `You are a finance HR analyst. Based on expense data:
 - Total claims: ${claims.length}
-- Approved amount: $${totalApproved.toFixed(2)}
-- Pending amount: $${totalPending.toFixed(2)}
-- Top expense category: ${topCategory ? `${topCategory[0]} ($${topCategory[1].toFixed(2)})` : 'N/A'}
+- Approved amount: ${totalApproved}
+- Pending amount: ${totalPending}
+- Top expense category: ${topCategory ? `${topCategory[0]} (${topCategory[1]})` : 'N/A'}
 
 Return JSON: {"summary":"one sentence overall health","alert":"any anomaly","recommendation":"actionable step","savingsTip":"cost saving idea"}
 Only JSON.`;
@@ -198,13 +206,11 @@ Only JSON.`;
     }
   };
 
-  // Prepare chart data: spending by category (donut)
   const categoryData = categories.map(cat => ({
     name: cat,
     amount: claims.filter(c => c.category === cat).reduce((s, c) => s + (c.amount || 0), 0)
   })).filter(d => d.amount > 0);
 
-  // IMPROVED: Monthly trend data for bar chart (grouped by month, approved vs pending amounts)
   const monthlyTrendMap = {};
   claims.forEach(c => {
     const month = c.date?.slice(0, 7) || 'Unknown';
@@ -238,41 +244,18 @@ Only JSON.`;
         <p>Submit and manage employee expense reimbursements with AI insights.</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="stat-grid">
-        <div className="stat-card blue">
-          <div className="stat-label">Total Claims</div>
-          <div className="stat-value blue">{claims.length}</div>
-          <div className="stat-sub">All time</div>
-        </div>
-        <div className="stat-card green">
-          <div className="stat-label">Approved Amount</div>
-          <div className="stat-value green">${totalApproved.toFixed(2)}</div>
-          <div className="stat-sub">Reimbursed</div>
-        </div>
-        <div className="stat-card orange">
-          <div className="stat-label">Pending Amount</div>
-          <div className="stat-value orange">${totalPending.toFixed(2)}</div>
-          <div className="stat-sub">Awaiting approval</div>
-        </div>
-        <div className="stat-card purple">
-          <div className="stat-label">Pending Review</div>
-          <div className="stat-value purple">{claims.filter(c => c.status === 'Pending').length}</div>
-          <div className="stat-sub">Claims</div>
-        </div>
+        <div className="stat-card blue"><div className="stat-label">Total Claims</div><div className="stat-value blue">{claims.length}</div><div className="stat-sub">All time</div></div>
+        <div className="stat-card green"><div className="stat-label">Approved Amount</div><div className="stat-value green">{formatINR(totalApproved)}</div><div className="stat-sub">Reimbursed</div></div>
+        <div className="stat-card orange"><div className="stat-label">Pending Amount</div><div className="stat-value orange">{formatINR(totalPending)}</div><div className="stat-sub">Awaiting approval</div></div>
+        <div className="stat-card purple"><div className="stat-label">Pending Review</div><div className="stat-value purple">{claims.filter(c => c.status === 'Pending').length}</div><div className="stat-sub">Claims</div></div>
       </div>
 
-      {/* AI Insight Card */}
       <div className="card" style={{ marginBottom: 24, padding: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Sparkles size={20} style={{ color: 'var(--accent)' }} />
-            <div>
-              <strong>AI Expense Insight</strong><br />
-              <span style={{ fontSize: 13, color: 'var(--text-2)' }}>
-                {aiInsight?.summary || 'Click "Analyze" for AI-powered recommendations'}
-              </span>
-            </div>
+            <div><strong>AI Expense Insight</strong><br /><span style={{ fontSize: 13, color: 'var(--text-2)' }}>{aiInsight?.summary || 'Click "Analyze" for AI-powered recommendations'}</span></div>
           </div>
           <button className="btn btn-primary btn-sm" onClick={generateAiInsights} disabled={aiLoading} style={{ gap: 6 }}>
             {aiLoading ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <RefreshCw size={14} />}
@@ -288,197 +271,78 @@ Only JSON.`;
         )}
       </div>
 
-      {/* Charts Row - Fixed Monthly Trend */}
       <div className="card-grid-2" style={{ marginBottom: 24, gap: 20 }}>
-        {/* Donut Chart - Spending by Category */}
         <div className="card" style={{ padding: '20px' }}>
-          <div className="card-header" style={{ marginBottom: 12 }}>
-            <div className="card-title">Spending by Category</div>
-            <PieChartIcon size={16} style={{ color: 'var(--text-3)' }} />
-          </div>
+          <div className="card-header"><div className="card-title">Spending by Category</div><PieChartIcon size={16} style={{ color: 'var(--text-3)' }} /></div>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie
-                data={categoryData}
-                cx="50%"
-                cy="50%"
-                innerRadius={55}
-                outerRadius={85}
-                paddingAngle={2}
-                dataKey="amount"
-                label={({ name, percent }) => `${name} (${(percent*100).toFixed(0)}%)`}
-                labelLine={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1 }}
-              >
-                {categoryData.map((entry, idx) => (
-                  <Cell key={`cell-${idx}`} fill={catColors[entry.name] || '#94a3b8'} stroke="rgba(0,0,0,0.2)" strokeWidth={1} />
-                ))}
+              <Pie data={categoryData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2} dataKey="amount" label={({ name, percent }) => `${name} (${(percent*100).toFixed(0)}%)`} labelLine={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 1 }}>
+                {categoryData.map((entry, idx) => (<Cell key={`cell-${idx}`} fill={catColors[entry.name] || '#94a3b8'} stroke="rgba(0,0,0,0.2)" strokeWidth={1} />))}
               </Pie>
               <Tooltip content={<PieTooltip />} />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Improved Monthly Trend - Grouped Bar Chart (Amounts) */}
         <div className="card" style={{ padding: '20px' }}>
-          <div className="card-header" style={{ marginBottom: 12 }}>
-            <div className="card-title">Monthly Expense Trend</div>
-            <BarChart3 size={16} style={{ color: 'var(--text-3)' }} />
-          </div>
+          <div className="card-header"><div className="card-title">Monthly Expense Trend</div><BarChart3 size={16} style={{ color: 'var(--text-3)' }} /></div>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={trendData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis 
-                dataKey="month" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#94a3b8', fontSize: 11 }} 
-                dy={8}
-              />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#94a3b8', fontSize: 11 }} 
-                tickFormatter={(val) => `$${val}`}
-              />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} dy={8} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={(val) => `₹${val/1000}k`} />
               <Tooltip content={<CustomAmountTooltip />} cursor={{ fill: 'rgba(56,189,248,0.05)' }} />
-              <Bar 
-                dataKey="pending" 
-                name="Pending" 
-                fill="#fbbf24" 
-                radius={[4, 4, 0, 0]} 
-                barSize={32}
-              />
-              <Bar 
-                dataKey="approved" 
-                name="Approved" 
-                fill="#34d399" 
-                radius={[4, 4, 0, 0]} 
-                barSize={32}
-              />
+              <Bar dataKey="pending" name="Pending" fill="#fbbf24" radius={[4, 4, 0, 0]} barSize={32} />
+              <Bar dataKey="approved" name="Approved" fill="#34d399" radius={[4, 4, 0, 0]} barSize={32} />
             </BarChart>
           </ResponsiveContainer>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 12, height: 12, borderRadius: 2, background: '#fbbf24' }}></div>
-              <span style={{ fontSize: 11, color: 'var(--text-2)' }}>Pending Amount</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 12, height: 12, borderRadius: 2, background: '#34d399' }}></div>
-              <span style={{ fontSize: 11, color: 'var(--text-2)' }}>Approved Amount</span>
-            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: 2, background: '#fbbf24' }}></div><span style={{ fontSize: 11, color: 'var(--text-2)' }}>Pending Amount</span></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: 2, background: '#34d399' }}></div><span style={{ fontSize: 11, color: 'var(--text-2)' }}>Approved Amount</span></div>
           </div>
         </div>
       </div>
 
-      {/* Tabs and Add Button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div className="tabs">
-          {tabs.map(t => (
-            <button key={t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>{t}</button>
-          ))}
-        </div>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-          <Plus size={14} /> New Claim
-        </button>
+        <div className="tabs">{tabs.map(t => (<button key={t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>{t}</button>))}</div>
+        <button className="btn btn-primary" onClick={() => setShowModal(true)}><Plus size={14} /> New Claim</button>
       </div>
 
-      {/* Claims Table */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="table-wrap">
           <table>
-            <thead>
-              <tr>
-                <th>Employee</th><th>Category</th><th>Amount</th><th>Date</th><th>Description</th><th>Status</th><th>Actions</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Employee</th><th>Category</th><th>Amount</th><th>Date</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
               {filtered.map(c => (
                 <tr key={c.id}>
-                  <td>
-                    <div className="emp-info">
-                      <div className="emp-avatar" style={{ fontSize: 11, background: `linear-gradient(135deg, ${catColors[c.category] || '#6366f1'}, #38bdf8)` }}>
-                        {c.empName?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 500 }}>{c.empName}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: catColors[c.category] }}>
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: catColors[c.category], display: 'inline-block' }} />
-                      {c.category}
-                    </span>
-                  </td>
-                  <td style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>${c.amount?.toFixed(2)}</td>
+                  <td><div className="emp-info"><div className="emp-avatar" style={{ fontSize: 11, background: `linear-gradient(135deg, ${catColors[c.category] || '#6366f1'}, #38bdf8)` }}>{c.empName?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}</div><span style={{ fontSize: 13, fontWeight: 500 }}>{c.empName}</span></div></td>
+                  <td><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: catColors[c.category] }}><span style={{ width: 7, height: 7, borderRadius: '50%', background: catColors[c.category], display: 'inline-block' }} />{c.category}</span></td>
+                  <td style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>{formatINR(c.amount)}</td>
                   <td style={{ color: 'var(--text-2)', fontSize: 13 }}>{c.date}</td>
                   <td style={{ color: 'var(--text-2)', fontSize: 12, maxWidth: 180 }}>{c.desc}</td>
-                  <td>
-                    <span className={`badge ${c.status === 'Approved' ? 'badge-green' : c.status === 'Pending' ? 'badge-orange' : 'badge-red'}`}>
-                      {c.status}
-                    </span>
-                  </td>
-                  <td>
-                    {c.status === 'Pending' && (
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button className="btn btn-sm btn-outline" style={{ color: 'var(--accent3)', borderColor: 'var(--accent3)' }} onClick={() => approve(c.id)}>
-                          <Check size={12} />
-                        </button>
-                        <button className="btn btn-sm btn-danger" onClick={() => reject(c.id)}>
-                          <X size={12} />
-                        </button>
-                      </div>
-                    )}
-                  </td>
+                  <td><span className={`badge ${c.status === 'Approved' ? 'badge-green' : c.status === 'Pending' ? 'badge-orange' : 'badge-red'}`}>{c.status}</span></td>
+                  <td>{c.status === 'Pending' && (<div style={{ display: 'flex', gap: 6 }}><button className="btn btn-sm btn-outline" style={{ color: 'var(--accent3)', borderColor: 'var(--accent3)' }} onClick={() => approve(c.id)}><Check size={12} /></button><button className="btn btn-sm btn-danger" onClick={() => reject(c.id)}><X size={12} /></button></div>)}</td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: 40, color: 'var(--text-3)' }}>
-                    No claims found.
-                  </td>
-                </tr>
-              )}
+              {filtered.length === 0 && <tr><td colSpan="7" style={{ textAlign: 'center', padding: 40, color: 'var(--text-3)' }}>No claims found.</td></tr>}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Add Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
             <div className="modal-title">New Expense Claim</div>
-            <div className="modal-sub">Submit a claim for reimbursement.</div>
+            <div className="modal-sub">Submit a claim for reimbursement (₹ Indian Rupee).</div>
             <div className="form-grid">
-              <div className="form-group" style={{ gridColumn: '1/-1' }}>
-                <label className="form-label">Employee</label>
-                <select className="form-select" value={form.empId} onChange={e => setForm({ ...form, empId: e.target.value })}>
-                  <option value="">Select employee</option>
-                  {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Category</label>
-                <select className="form-select" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
-                  {categories.map(c => <option key={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Amount (SGD)</label>
-                <input className="form-input" type="number" step="0.01" placeholder="e.g. 45.60" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Date</label>
-                <input className="form-input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
-              </div>
-              <div className="form-group" style={{ gridColumn: '1/-1' }}>
-                <label className="form-label">Description</label>
-                <input className="form-input" placeholder="Brief description…" value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} />
-              </div>
+              <div className="form-group" style={{ gridColumn: '1/-1' }}><label className="form-label">Employee</label><select className="form-select" value={form.empId} onChange={e => setForm({ ...form, empId: e.target.value })}><option value="">Select employee</option>{employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
+              <div className="form-group"><label className="form-label">Category</label><select className="form-select" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{categories.map(c => <option key={c}>{c}</option>)}</select></div>
+              <div className="form-group"><label className="form-label">Amount (₹)</label><input className="form-input" type="number" step="0.01" placeholder="e.g. 4500" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} /></div>
+              <div className="form-group"><label className="form-label">Date</label><input className="form-input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></div>
+              <div className="form-group" style={{ gridColumn: '1/-1' }}><label className="form-label">Description</label><input className="form-input" placeholder="Brief description…" value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} /></div>
             </div>
-            <div className="modal-actions">
-              <button className="btn btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={submitClaim}><Receipt size={14} /> Submit Claim</button>
-            </div>
+            <div className="modal-actions"><button className="btn btn-outline" onClick={() => setShowModal(false)}>Cancel</button><button className="btn btn-primary" onClick={submitClaim}><Receipt size={14} /> Submit Claim</button></div>
           </div>
         </div>
       )}
