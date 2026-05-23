@@ -1,0 +1,8 @@
+[
+  { "id": 1, "empId": 2, "empName": "Priya Rajan", "category": "Transport", "amount": 45.6, "date": "2025-06-02", "status": "Approved", "desc": "Grab to client site" },
+  { "id": 2, "empId": 5, "empName": "Samuel Chia", "category": "Equipment", "amount": 320.0, "date": "2025-06-03", "status": "Pending", "desc": "USB-C hub for WFH" },
+  { "id": 3, "empId": 1, "empName": "Arjun Mehta", "category": "Meals", "amount": 78.4, "date": "2025-06-04", "status": "Approved", "desc": "Team lunch meeting" },
+  { "id": 4, "empId": 3, "empName": "Wei Liang Tan", "category": "Training", "amount": 550.0, "date": "2025-06-05", "status": "Pending", "desc": "Python bootcamp fee" },
+  { "id": 5, "empId": 7, "empName": "Rajesh Kumar", "category": "Transport", "amount": 32.8, "date": "2025-06-06", "status": "Approved", "desc": "MRT travel claims" },
+  { "id": 6, "empId": 8, "empName": "Lena Tan", "category": "Meals", "amount": 22.0, "date": "2025-06-07", "status": "Rejected", "desc": "Personal dinner" }
+]

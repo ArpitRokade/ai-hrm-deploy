@@ -1,0 +1,6 @@
+[
+  { "id": 1, "name": "Sofia Lim", "appliedFor": "Frontend Developer", "skills": ["React", "TypeScript", "Figma"], "experience": 4, "score": 88, "status": "Shortlisted", "notes": "Strong UI experience and good component design." },
+  { "id": 2, "name": "Daniel Ooi", "appliedFor": "Data Scientist", "skills": ["Python", "Machine Learning", "SQL"], "experience": 3, "score": 82, "status": "Interview", "notes": "Good analytics background with model deployment exposure." },
+  { "id": 3, "name": "Nadia Hassan", "appliedFor": "HR Executive", "skills": ["Recruitment", "Employee Relations", "HRIS"], "experience": 5, "score": 90, "status": "Offer", "notes": "Excellent people skills and process knowledge." },
+  { "id": 4, "name": "Kevin Tan", "appliedFor": "DevOps Engineer", "skills": ["AWS", "Docker", "CI/CD"], "experience": 4, "score": 85, "status": "Shortlisted", "notes": "Strong automation and infrastructure experience." }
+]

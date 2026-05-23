@@ -1,0 +1,8 @@
+[
+  { "month": "Jan", "totalPayout": 165400, "employees": 8 },
+  { "month": "Feb", "totalPayout": 165400, "employees": 8 },
+  { "month": "Mar", "totalPayout": 168200, "employees": 8 },
+  { "month": "Apr", "totalPayout": 168200, "employees": 8 },
+  { "month": "May", "totalPayout": 170800, "employees": 8 },
+  { "month": "Jun", "totalPayout": 170800, "employees": 8 }
+]

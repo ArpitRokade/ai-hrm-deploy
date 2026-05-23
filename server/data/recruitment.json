@@ -1,0 +1,6 @@
+[
+  { "id": 1, "role": "Frontend Developer", "openPositions": 2, "candidates": 7, "stage": "Interviewing" },
+  { "id": 2, "role": "Data Scientist", "openPositions": 1, "candidates": 5, "stage": "Screening" },
+  { "id": 3, "role": "HR Executive", "openPositions": 1, "candidates": 4, "stage": "Offer" },
+  { "id": 4, "role": "DevOps Engineer", "openPositions": 1, "candidates": 3, "stage": "Shortlisting" }
+]

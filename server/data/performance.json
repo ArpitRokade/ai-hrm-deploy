@@ -1,0 +1,7 @@
+[
+  { "id": 1, "empId": 1, "name": "Arjun Mehta", "rating": 4.7, "review": "Exceeded delivery goals, strong team collaboration." },
+  { "id": 2, "empId": 3, "name": "Wei Liang Tan", "rating": 4.3, "review": "Data insights helped improve product performance." },
+  { "id": 3, "empId": 4, "name": "Fatimah Binte Yusof", "rating": 4.1, "review": "Great UX work with strong stakeholder feedback." },
+  { "id": 4, "empId": 7, "name": "Rajesh Kumar", "rating": 4.5, "review": "Solid backend delivery and architecture reviews." },
+  { "id": 5, "empId": 8, "name": "Lena Tan", "rating": 4.0, "review": "Marketing campaigns showed a strong ROI." }
+]

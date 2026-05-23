@@ -1,0 +1,78 @@
+[
+  {
+    "id": 1,
+    "empId": 1,
+    "empName": "Arjun Mehta",
+    "type": "Annual",
+    "from": "2025-06-10",
+    "to": "2025-06-12",
+    "days": 3,
+    "status": "Approved",
+    "reason": "Family vacation"
+  },
+  {
+    "id": 2,
+    "empId": 3,
+    "empName": "Wei Liang Tan",
+    "type": "Medical",
+    "from": "2025-06-05",
+    "to": "2025-06-05",
+    "days": 1,
+    "status": "Approved",
+    "reason": "Doctor appointment"
+  },
+  {
+    "id": 3,
+    "empId": 6,
+    "empName": "Mei Lin Chen",
+    "type": "Annual",
+    "from": "2025-06-01",
+    "to": "2025-06-07",
+    "days": 5,
+    "status": "Approved",
+    "reason": "Holiday trip"
+  },
+  {
+    "id": 4,
+    "empId": 4,
+    "empName": "Fatimah Binte Yusof",
+    "type": "Childcare",
+    "from": "2025-06-15",
+    "to": "2025-06-15",
+    "days": 1,
+    "status": "Pending",
+    "reason": "Child school event"
+  },
+  {
+    "id": 5,
+    "empId": 7,
+    "empName": "Rajesh Kumar",
+    "type": "Annual",
+    "from": "2025-06-20",
+    "to": "2025-06-22",
+    "days": 3,
+    "status": "Pending",
+    "reason": "Personal"
+  },
+  {
+    "id": 6,
+    "empId": 8,
+    "empName": "Lena Tan",
+    "type": "Medical",
+    "from": "2025-06-03",
+    "to": "2025-06-04",
+    "days": 2,
+    "status": "Rejected",
+    "reason": "Unwell"
+  },
+  {
+    "empId": 5,
+    "type": "Annual",
+    "from": "2023-07-09",
+    "to": "2023-07-11",
+    "days": 3,
+    "status": "Pending",
+    "reason": "wedding",
+    "id": 7
+  }
+]

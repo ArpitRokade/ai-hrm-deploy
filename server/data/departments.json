@@ -1,0 +1,8 @@
+[
+  { "name": "Engineering", "headcount": 3, "budget": 380000, "color": "#6366f1" },
+  { "name": "Human Resources", "headcount": 1, "budget": 120000, "color": "#22d3ee" },
+  { "name": "Analytics", "headcount": 1, "budget": 100000, "color": "#f472b6" },
+  { "name": "Design", "headcount": 1, "budget": 90000, "color": "#34d399" },
+  { "name": "Product", "headcount": 1, "budget": 140000, "color": "#fb923c" },
+  { "name": "Marketing", "headcount": 1, "budget": 80000, "color": "#a78bfa" }
+]

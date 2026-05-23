@@ -1,0 +1,7 @@
+[
+  { "id": 1, "empId": 1, "name": "Arjun Mehta", "date": "2025-06-10", "checkIn": "09:12", "checkOut": "18:05", "status": "Present" },
+  { "id": 2, "empId": 2, "name": "Priya Rajan", "date": "2025-06-10", "checkIn": "08:58", "checkOut": "17:50", "status": "Present" },
+  { "id": 3, "empId": 3, "name": "Wei Liang Tan", "date": "2025-06-10", "checkIn": "09:05", "checkOut": "17:40", "status": "Present" },
+  { "id": 4, "empId": 4, "name": "Fatimah Binte Yusof", "date": "2025-06-10", "checkIn": "09:30", "checkOut": "18:10", "status": "Late" },
+  { "id": 5, "empId": 6, "name": "Mei Lin Chen", "date": "2025-06-10", "checkIn": "-", "checkOut": "-", "status": "On Leave" }
+]
