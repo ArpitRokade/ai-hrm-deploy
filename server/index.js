@@ -3,31 +3,83 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ========== GEMINI AI SETUP ==========
-const GEMINI_API_KEY = "AIzaSyDdvi1nFN9U_KBFDDdLWRxn9JXXPugv4is";
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+// ========== SERVE REACT BUILD (for production) ==========
+const buildPath = path.join(__dirname, '../build');
+const isProduction = fs.existsSync(buildPath);
 
-// Use a model that we know works from the list
-const MODEL_NAME = 'gemini-2.5-flash';
+if (isProduction) {
+  app.use(express.static(buildPath));
+  console.log('✅ Serving React build from:', buildPath);
+}
+
+// ========== LOAD API KEYS FROM ENVIRONMENT ==========
+// Format in .env: GEMINI_API_KEYS=key1,key2,key3
+const API_KEYS = process.env.GEMINI_API_KEYS ? process.env.GEMINI_API_KEYS.split(',').map(k => k.trim()) : [];
+if (API_KEYS.length === 0) {
+  console.warn('⚠️ No API keys provided. Set GEMINI_API_KEYS in .env. Falling back to keyword analysis only.');
+}
+
+let currentKeyIndex = 0;
 let aiModel = null;
+const MODEL_NAME = 'gemini-2.5-flash'; // Use a stable model from your list
 
+// Helper to create a new GenAI client with a given key
+function createGenAI(key) {
+  return new GoogleGenerativeAI(key);
+}
+
+// Initialize AI with the first working key
 async function initAI() {
-  try {
-    aiModel = genAI.getGenerativeModel({ model: MODEL_NAME });
-    // Test the model
-    await aiModel.generateContent('test');
-    console.log(`✅ Gemini AI ready (model: ${MODEL_NAME})`);
-  } catch (err) {
-    console.warn(`⚠️ Failed to init ${MODEL_NAME}:`, err.message);
-    aiModel = null;
+  if (API_KEYS.length === 0) return;
+  for (let i = 0; i < API_KEYS.length; i++) {
+    const key = API_KEYS[i];
+    try {
+      const client = createGenAI(key);
+      const model = client.getGenerativeModel({ model: MODEL_NAME });
+      await model.generateContent('test');
+      // Success – keep this client/model
+      aiModel = model;
+      currentKeyIndex = (i + 1) % API_KEYS.length; // start next request from next key
+      console.log(`✅ Gemini AI ready with key ${i+1} (model: ${MODEL_NAME})`);
+      return;
+    } catch (err) {
+      console.warn(`❌ Key ${i+1} failed:`, err.message);
+    }
   }
+  console.warn('⚠️ No working Gemini key found – AI will fallback to keyword analysis');
 }
 initAI();
+
+// Function to call Gemini with automatic key rotation on failure
+async function callWithKeyRotation(generateFunc) {
+  if (!aiModel || API_KEYS.length === 0) {
+    throw new Error('No AI model available');
+  }
+  let lastError = null;
+  const startIndex = currentKeyIndex;
+  for (let attempt = 0; attempt < API_KEYS.length; attempt++) {
+    const key = API_KEYS[currentKeyIndex];
+    const client = createGenAI(key);
+    const model = client.getGenerativeModel({ model: MODEL_NAME });
+    try {
+      const result = await generateFunc(model);
+      // Success: move to next key for next request (round‑robin load balancing)
+      currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+      return result;
+    } catch (err) {
+      console.error(`Key ${currentKeyIndex+1} failed:`, err.message);
+      lastError = err;
+      currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+    }
+  }
+  throw lastError || new Error('All API keys exhausted');
+}
 
 // ========== DATA FOLDER ==========
 const dataDir = path.join(__dirname, 'data');
@@ -41,7 +93,7 @@ function writeJSON(name, obj) {
   fs.writeFileSync(p, JSON.stringify(obj, null, 2), 'utf8');
 }
 
-// ========== REST ENDPOINTS (unchanged) ==========
+// ========== REST ENDPOINTS (your original CRUD) ==========
 app.get('/api/employees', (req, res) => {
   const data = readJSON('employees.json') || [];
   res.json(data);
@@ -94,31 +146,46 @@ simpleLists.forEach(name => {
   });
 });
 
-// ========== CHATBOT (AI + fallback) ==========
+// ========== CHATBOT (AI with rotation + fallback) ==========
 app.post('/api/chatbot/ask', async (req, res) => {
   const { question } = req.body;
   if (!question) return res.status(400).json({ error: 'Missing question' });
 
+  // Try AI with key rotation
   if (aiModel) {
     try {
-      const prompt = `You are HRBot, an AI HR assistant for AMBE AI TECHNOLOGIES (Singapore). 
+      const result = await callWithKeyRotation(async (model) => {
+        const prompt = `You are HRBot, an AI HR assistant for AMBE AI TECHNOLOGIES (Singapore). 
 Answer the following HR question concisely and helpfully. Use Singapore HR practices.
 Question: ${question}`;
-      const result = await aiModel.generateContent(prompt);
+        return await model.generateContent(prompt);
+      });
       const reply = result.response.text();
       return res.json({ reply });
     } catch (err) {
-      console.error('Chatbot AI error:', err.message);
+      console.error('All keys failed for chatbot:', err.message);
+      // fall through to fallback
     }
   }
-  // Fallback
+
+  // Fallback: answer from local JSON data
   const employees = readJSON('employees.json') || [];
   const leaves = readJSON('leaves.json') || [];
-  const reply = `I have ${employees.length} employees and ${leaves.filter(l => l.status === 'Pending').length} pending leaves. Ask me about HR policies.`;
+  const pendingLeaves = leaves.filter(l => l.status === 'Pending').length;
+  let reply = `I have ${employees.length} employees and ${pendingLeaves} pending leaves. `;
+  const query = question.toLowerCase();
+  if (query.includes('cpf')) {
+    reply += "Singapore CPF: employee 20%, employer 17% (≤55).";
+  } else if (query.includes('payroll')) {
+    const total = employees.reduce((s, e) => s + (e.salary || 0), 0);
+    reply += `Monthly payroll: SGD ${total.toLocaleString()}.`;
+  } else {
+    reply += "Ask me about employees, leaves, payroll, or CPF.";
+  }
   res.json({ reply });
 });
 
-// ========== RESUME SCREENING (AI + fallback) ==========
+// ========== RESUME SCREENING (AI with rotation + fallback) ==========
 app.post('/api/analyzer/analyze', async (req, res) => {
   const { resumeText, jobDescription } = req.body;
   if (!resumeText || !jobDescription) {
@@ -127,26 +194,27 @@ app.post('/api/analyzer/analyze', async (req, res) => {
 
   if (aiModel) {
     try {
-      const prompt = `You are an expert HR screener. Analyze this resume against the job description.
+      const result = await callWithKeyRotation(async (model) => {
+        const prompt = `You are an expert HR screener. Analyze this resume against the job description.
 Return **only** a valid JSON object with keys: "keyStrengths" (array of strings), "gaps" (array of strings), "score" (integer 0-100), "recommendation" (one of: "Strong Hire", "Interview", "Maybe", "Reject").
 Job Description: ${jobDescription}
 Resume Text: ${resumeText.substring(0, 3000)}`;
-      const result = await aiModel.generateContent(prompt);
+        return await model.generateContent(prompt);
+      });
       let raw = result.response.text();
-      // Clean up markdown code fences
       raw = raw.replace(/^```json\s*/i, '').replace(/```$/g, '').trim();
       const parsed = JSON.parse(raw);
-      // Validate structure
       if (!parsed.keyStrengths || !parsed.gaps || typeof parsed.score !== 'number') {
         throw new Error('Invalid JSON structure');
       }
       return res.json(parsed);
     } catch (err) {
-      console.error('Resume AI error, using fallback:', err.message);
+      console.error('All keys failed for resume screening:', err.message);
+      // fall through to fallback
     }
   }
 
-  // ---------- FALLBACK: keyword-based ----------
+  // ---------- FALLBACK: keyword-based (always works) ----------
   const text = (resumeText + ' ' + jobDescription).toLowerCase();
   const keywords = { python:10, react:10, javascript:8, aws:8, lead:7, cloud:6, docker:6, phd:8 };
   let score = 50;
@@ -169,12 +237,24 @@ Resume Text: ${resumeText.substring(0, 3000)}`;
 
 // ========== DIAGNOSTIC (optional) ==========
 app.get('/api/list-models', async (req, res) => {
+  if (API_KEYS.length === 0) return res.status(500).json({ error: 'No API keys configured' });
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEYS[0]}`);
     const data = await r.json();
     res.json(data);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ========== CATCH-ALL: Serve React's index.html for non-API routes ==========
+if (isProduction) {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
+}
+
+// ========== START SERVER ==========
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+  if (API_KEYS.length === 0) console.warn('⚠️ No Gemini API keys set. AI features will use fallback.');
+});
